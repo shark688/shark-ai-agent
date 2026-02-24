@@ -1,5 +1,6 @@
 ### CUSTOM ###
 application-local.yaml
+tmp
 
 HELP.md
 target/

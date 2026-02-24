@@ -1,5 +1,8 @@
 package com.shark.sharkaiagent.app;
 
+import com.shark.sharkaiagent.advisor.MyLoggerAdvisor;
+import com.shark.sharkaiagent.advisor.ReReadingAdvisor;
+import com.shark.sharkaiagent.chatmemory.FileBasedChatMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -10,8 +13,11 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Slf4j
@@ -33,24 +39,38 @@ public class CounselAPP {
 
     public CounselAPP(ChatModel dashscopeChatModel)
     {
-        ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
-        ChatMemory chatMemory = MessageWindowChatMemory.builder()
-                .chatMemoryRepository(repository)
-                .maxMessages(10)
-                .build();
+        //初始化基于文件的对话记忆
+        String fileDir = System.getProperty("user.dir") + "/chat-memory";
+        ChatMemory chatMemory = new FileBasedChatMemory(fileDir);
         chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build()
                 )
                 .build();
+
+
+//        //初始化基于内存的对话记忆
+//        ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
+//        ChatMemory chatMemory = MessageWindowChatMemory.builder()
+//                .chatMemoryRepository(repository)
+//                .maxMessages(10)
+//                .build();
+//        chatClient = ChatClient.builder(dashscopeChatModel)
+//                .defaultSystem(SYSTEM_PROMPT)
+//                .defaultAdvisors(
+//                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+//                        new MyLoggerAdvisor()
+////                      ,new ReReadingAdvisor()
+//                )
+//                .build();
     }
 
     /**
      * AI 对话
      * @param message
      * @param chatId
-     * @return
+     * @return result
      */
     public String doChat(String message, String chatId)
     {
@@ -64,4 +84,25 @@ public class CounselAPP {
         return result;
     }
 
+    record CounselReport(String title, List<String> suggestions, String summary) {
+    }
+
+    /**
+     * AI 对话并输出结构化内容
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public CounselReport doChatWithReport(String message, String chatId)
+    {
+        CounselReport counselReport = chatClient
+                .prompt()
+                .system(SYSTEM_PROMPT + "每次对话后都要生成心理咨询结果，标题为{用户名}的心理咨询报告，内容为建议列表与分析总结")
+                .user(message)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .call()
+                .entity(CounselReport.class);
+        log.info("loveReport: {}", counselReport);
+        return counselReport;
+    }
 }
