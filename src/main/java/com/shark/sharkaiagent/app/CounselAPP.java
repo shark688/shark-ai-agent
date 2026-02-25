@@ -2,6 +2,7 @@ package com.shark.sharkaiagent.app;
 
 import com.shark.sharkaiagent.advisor.MyLoggerAdvisor;
 import com.shark.sharkaiagent.advisor.ReReadingAdvisor;
+import com.shark.sharkaiagent.advisor.ViolationWordAdvisor;
 import com.shark.sharkaiagent.chatmemory.FileBasedChatMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -17,6 +18,7 @@ import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -45,7 +47,8 @@ public class CounselAPP {
         chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                        new ViolationWordAdvisor(List.of("草","你妈"))
                 )
                 .build();
 

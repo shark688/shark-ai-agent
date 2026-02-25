@@ -82,6 +82,12 @@
             <artifactId>kryo</artifactId>
             <version>5.6.2</version>
         </dependency>
+        <!-- 高效的AC自动机实现 -->
+        <dependency>
+            <groupId>org.ahocorasick</groupId>
+            <artifactId>ahocorasick</artifactId>
+            <version>0.6.3</version>
+        </dependency>
     </dependencies>
 
     <build>
